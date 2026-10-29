@@ -1,11 +1,3 @@
-"""
-Bioinformatics Lab - Rebuilding a genome from random samples (shotgun assembly)
-
-1. Read a whole viral genome from an NCBI .fna file.
-2. Take 2000 random samples (reads) of 100-120 nucleotides and store them in a list.
-3. Rebuild the genome only from the samples, by overlapping them (greedy assembly).
-4. Compare the result with the original genome and show the main problem.
-"""
 
 import random
 import matplotlib.pyplot as plt
@@ -13,13 +5,9 @@ import matplotlib.pyplot as plt
 FILE = "genome.fna"
 NUM_SAMPLES = 2000
 MIN_LEN, MAX_LEN = 100, 120
-MIN_OVERLAP = 20          # minimum overlap accepted between two samples
-random.seed(42)           # same random samples every run (remove for new ones)
+MIN_OVERLAP = 20          
+random.seed(42)           
 
-
-# ---------------------------------------------------------------
-# 1. Read the genome
-# ---------------------------------------------------------------
 genome = ""
 with open(FILE) as f:
     for line in f:
@@ -28,12 +16,8 @@ with open(FILE) as f:
 
 print("Original genome length:", len(genome), "nucleotides")
 
-
-# ---------------------------------------------------------------
-# 2. Take 2000 random samples and store them in a list
-# ---------------------------------------------------------------
 samples = []
-positions = []            # kept ONLY to check the result later, not used to rebuild
+positions = []            
 for _ in range(NUM_SAMPLES):
     length = random.randint(MIN_LEN, MAX_LEN)
     start = random.randint(0, len(genome) - length)
@@ -45,11 +29,6 @@ print("Samples taken:", len(samples))
 print("Average coverage:", round(total_bases / len(genome), 2), "x")
 
 
-# ---------------------------------------------------------------
-# 3. Rebuild the genome from the samples (greedy overlap assembly)
-# ---------------------------------------------------------------
-
-# 3a. Remove duplicates and samples fully contained inside other samples
 unique = sorted(set(samples), key=len, reverse=True)
 reads = []
 for s in unique:
@@ -57,13 +36,11 @@ for s in unique:
         reads.append(s)
 print("Samples left after removing duplicates/contained ones:", len(reads))
 
-# 3b. Index every sample by its first MIN_OVERLAP letters
 prefix_index = {}
 for j, r in enumerate(reads):
     prefix_index.setdefault(r[:MIN_OVERLAP], []).append(j)
 
-# 3c. Find all overlaps: the end of sample A equals the beginning of sample B
-edges = []                # (overlap length, A, B)
+edges = []                
 for i, a in enumerate(reads):
     for pos in range(1, len(a) - MIN_OVERLAP + 1):
         for j in prefix_index.get(a[pos:pos + MIN_OVERLAP], []):
@@ -72,7 +49,6 @@ for i, a in enumerate(reads):
                 if reads[j][:ov] == a[pos:]:
                     edges.append((ov, i, j))
 
-# 3d. Greedy: join the pairs with the largest overlap first
 edges.sort(reverse=True)
 next_of, prev_of = {}, {}
 
@@ -92,7 +68,6 @@ for ov, a, b in edges:
         next_of[a], prev_of[b] = b, a
         overlap_of[(a, b)] = ov
 
-# 3e. Walk each chain and glue the samples together into contigs
 contigs = []
 for start_read in range(len(reads)):
     if start_read in prev_of:
@@ -109,9 +84,6 @@ contigs.sort(key=len, reverse=True)
 rebuilt = contigs[0]
 
 
-# ---------------------------------------------------------------
-# 4. Compare with the original genome
-# ---------------------------------------------------------------
 print()
 print("Number of pieces (contigs) rebuilt:", len(contigs))
 print("Longest contig:", len(rebuilt), "nucleotides",
@@ -122,7 +94,6 @@ correct = sum(1 for c in contigs if c in genome)
 print("Contigs that match the original exactly:", correct, "of", len(contigs))
 print("Genome rebuilt completely and correctly:", rebuilt == genome)
 
-# Coverage: how many samples cover each position of the genome
 coverage = [0] * len(genome)
 for s, e in positions:
     for p in range(s, e):
@@ -142,7 +113,6 @@ print("Gaps (regions with zero coverage):", len(gaps))
 for s, e in gaps:
     print(f"  gap at positions {s + 1}-{e + 1} ({e - s + 1} nt)")
 
-# Coverage chart
 plt.figure(figsize=(12, 4.5))
 plt.plot(range(1, len(genome) + 1), coverage, color="#2a7f9e", linewidth=0.7)
 for s, e in gaps:
